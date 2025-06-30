@@ -72,14 +72,16 @@ if __name__ == "__main__":
 
     url = sys.argv[1]
     temp_name = f"/tmp/{uuid.uuid4()}"
-    
+    isYoutube: bool = False;
+
     try:
         if (url.startswith("http://") or
             url.startswith("https://")):
             wav_path = download_audio(url, temp_name)
+            isYoutube = True
         else:
             wav_path = url
         play_audio(wav_path)
     finally:
-        if os.path.exists(wav_path):
+        if os.path.exists(wav_path) and isYoutube:
             os.remove(wav_path)

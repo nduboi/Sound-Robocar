@@ -2,7 +2,7 @@
 
 if [ $# -eq 0 ]; then
     echo "Error: No music file specified."
-    echo "Usage: $0 <music_path / or youtue link>"
+    echo "Usage: $0 <music_path / or youtube link>"
     exit 1
 fi
 
