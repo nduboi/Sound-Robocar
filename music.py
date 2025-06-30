@@ -2,16 +2,41 @@ import sys
 import os
 import subprocess
 import uuid
+import wave
 import pyaudio
+import yt_dlp
+
+def download_audio(url, output_path):
+    temp_file = output_path + ".webm"
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': temp_file,
+        'quiet': True,
+        'no_warnings': True,
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        print(f"Downloading audio from: {url}")
+        ydl.download([url])
+
+    # Convert to WAV
+    wav_file = output_path + ".wav"
+    print("Converting to WAV...")
+    subprocess.run(['ffmpeg', '-y', '-i', temp_file, wav_file],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    os.remove(temp_file)
+    return wav_file
 
 def play_audio(wav_path):
-    import wave
     import pyaudio
+    import wave
 
     chunk = 1024
     wf = wave.open(wav_path, 'rb')
     p = pyaudio.PyAudio()
 
+    # Trouver l'index de la carte son USB (nom contient "USB")
     device_index = None
     for i in range(p.get_device_count()):
         dev = p.get_device_info_by_index(i)
@@ -22,7 +47,7 @@ def play_audio(wav_path):
 
     if device_index is None:
         print("No USB audio output device found, using default output")
-        device_index = None
+        device_index = None  # Laisser par défaut
 
     stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
                     channels=wf.getnchannels(),
@@ -46,4 +71,15 @@ if __name__ == "__main__":
         sys.exit(1)
 
     url = sys.argv[1]
-    play_audio(url)
+    temp_name = f"/tmp/{uuid.uuid4()}"
+    
+    try:
+        if (url.startswith("http://") or
+            url.startswith("https://")):
+            wav_path = download_audio(url, temp_name)
+        else:
+            wav_path = url
+        play_audio(wav_path)
+    finally:
+        if os.path.exists(wav_path):
+            os.remove(wav_path)
