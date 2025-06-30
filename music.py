@@ -29,14 +29,31 @@ def download_audio(url, output_path):
     return wav_file
 
 def play_audio(wav_path):
+    import pyaudio
+    import wave
+
     chunk = 1024
     wf = wave.open(wav_path, 'rb')
     p = pyaudio.PyAudio()
 
+    # Trouver l'index de la carte son USB (nom contient "USB")
+    device_index = None
+    for i in range(p.get_device_count()):
+        dev = p.get_device_info_by_index(i)
+        if "USB" in dev['name'] and dev['maxOutputChannels'] > 0:
+            device_index = i
+            print(f"Using output device {dev['name']} at index {i}")
+            break
+
+    if device_index is None:
+        print("No USB audio output device found, using default output")
+        device_index = None  # Laisser par défaut
+
     stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
                     channels=wf.getnchannels(),
                     rate=wf.getframerate(),
-                    output=True)
+                    output=True,
+                    output_device_index=device_index)
 
     data = wf.readframes(chunk)
     while data:
