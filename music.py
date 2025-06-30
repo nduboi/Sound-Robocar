@@ -19,14 +19,7 @@ def download_audio(url, output_path):
         print(f"Downloading audio from: {url}")
         ydl.download([url])
 
-    # Convert to WAV
-    wav_file = output_path + ".wav"
-    print("Converting to WAV...")
-    subprocess.run(['ffmpeg', '-y', '-i', temp_file, wav_file],
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-    os.remove(temp_file)
-    return wav_file
+    return temp_file
 
 def play_audio(wav_path):
     import pyaudio
@@ -36,7 +29,6 @@ def play_audio(wav_path):
     wf = wave.open(wav_path, 'rb')
     p = pyaudio.PyAudio()
 
-    # Trouver l'index de la carte son USB (nom contient "USB")
     device_index = None
     for i in range(p.get_device_count()):
         dev = p.get_device_info_by_index(i)
@@ -47,7 +39,7 @@ def play_audio(wav_path):
 
     if device_index is None:
         print("No USB audio output device found, using default output")
-        device_index = None  # Laisser par défaut
+        device_index = None
 
     stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
                     channels=wf.getnchannels(),
@@ -65,6 +57,11 @@ def play_audio(wav_path):
     p.terminate()
     wf.close()
 
+def convert_to_wav(input_path, output_path):
+    print("Converting to WAV...")
+    subprocess.run(['ffmpeg', '-y', '-i', input_path, output_path],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python3 music.py <youtube-url>")
@@ -77,11 +74,16 @@ if __name__ == "__main__":
     try:
         if (url.startswith("http://") or
             url.startswith("https://")):
-            wav_path = download_audio(url, temp_name)
+            filePath = download_audio(url, temp_name)
             isYoutube = True
         else:
-            wav_path = url
-        play_audio(wav_path)
+            filePath = url
+        if not filePath.endswith('.wav'):
+            wavPath = os.path.splitext(filePath)[0] + ".wav"
+            convert_to_wav(filePath, wavPath)
+        play_audio(wavPath)
     finally:
-        if os.path.exists(wav_path) and isYoutube:
-            os.remove(wav_path)
+        if os.path.exists(wavPath) and isYoutube:
+            webmPath = os.path.splitext(filePath)[0] + ".webm"
+            os.remove(wavPath)
+            os.remove(webmPath)
