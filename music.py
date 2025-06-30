@@ -81,6 +81,8 @@ if __name__ == "__main__":
         if not filePath.endswith('.wav'):
             wavPath = os.path.splitext(filePath)[0] + ".wav"
             convert_to_wav(filePath, wavPath)
+        else:
+            wavPath = filePath
         play_audio(wavPath)
     finally:
         if os.path.exists(wavPath) and isYoutube:
