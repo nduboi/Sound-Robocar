@@ -5,6 +5,7 @@ import uuid
 import pyaudio
 
 def play_audio(wav_path):
+    import wave
     import pyaudio
 
     chunk = 1024
