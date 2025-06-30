@@ -1,1 +1,2 @@
 PyAudio
+yt-dlp

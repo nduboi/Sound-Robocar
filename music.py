@@ -1,24 +1,64 @@
-import pyaudio
+import sys
+import os
+import subprocess
+import uuid
 import wave
+import pyaudio
+import yt_dlp
 
-filename = 'assets/circus_horn.wav'
+def download_audio(url, output_path):
+    temp_file = output_path + ".webm"
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': temp_file,
+        'quiet': True,
+        'no_warnings': True,
+    }
 
-chunk = 1024
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        print(f"Downloading audio from: {url}")
+        ydl.download([url])
 
-wf = wave.open(filename, 'rb')
+    # Convert to WAV
+    wav_file = output_path + ".wav"
+    print("Converting to WAV...")
+    subprocess.run(['ffmpeg', '-y', '-i', temp_file, wav_file],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-p = pyaudio.PyAudio()
+    os.remove(temp_file)
+    return wav_file
 
-stream = p.open(format = p.get_format_from_width(wf.getsampwidth()),
-                channels = wf.getnchannels(),
-                rate = wf.getframerate(),
-                output = True)
+def play_audio(wav_path):
+    chunk = 1024
+    wf = wave.open(wav_path, 'rb')
+    p = pyaudio.PyAudio()
 
-data = wf.readframes(chunk)
+    stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                    channels=wf.getnchannels(),
+                    rate=wf.getframerate(),
+                    output=True)
 
-while data != '':
-    stream.write(data)
     data = wf.readframes(chunk)
+    while data:
+        stream.write(data)
+        data = wf.readframes(chunk)
 
-stream.close()
-p.terminate()
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+    wf.close()
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python3 music.py <youtube-url>")
+        sys.exit(1)
+
+    url = sys.argv[1]
+    temp_name = f"/tmp/{uuid.uuid4()}"
+    
+    try:
+        wav_path = download_audio(url, temp_name)
+        play_audio(wav_path)
+    finally:
+        if os.path.exists(wav_path):
+            os.remove(wav_path)
