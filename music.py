@@ -1,7 +1,7 @@
 import pyaudio
 import wave
 
-filename = 'assets/circus_horn.mp3'
+filename = 'assets/circus_horn.wav'
 
 chunk = 1024
 
